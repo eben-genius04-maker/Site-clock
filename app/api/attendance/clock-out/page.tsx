@@ -53,7 +53,8 @@ export default async function DashboardPage() {
         <StatCard icon={UserX} label="Absent" value={absentToday} tone="danger" />
         <StatCard icon={Clock} label="Late" value={lateToday} tone="gold" />
         <StatCard icon={Palmtree} label="On Leave" value={onLeaveToday} />
-        <StatCard icon={TrendingUp} label="Attendance Rate" value={`${attendanceRate}%`} tone="accent" />
+        <StatCard icon={TrendingUp} label="Attendance Rate" value={`
+          ${attendanceRate}%`} tone="accent" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">

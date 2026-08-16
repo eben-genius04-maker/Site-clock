@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/auth";
-import { generateEmployeeCode } from "@/lib/utils";
+import { requireUser } from "@/lib/auth";
+
+const MANAGER_ROLES = ["SUPER_ADMIN", "COMPANY_ADMIN", "HR_MANAGER", "SUPERVISOR"];
+const CREATOR_ROLES = ["SUPER_ADMIN", "COMPANY_ADMIN", "HR_MANAGER"];
 
 const createEmployeeSchema = z.object({
   fullName: z.string().min(2),
@@ -18,7 +20,11 @@ const createEmployeeSchema = z.object({
 
 // GET /api/employees?search=&departmentId=&status=&page=&pageSize=
 export async function GET(request: NextRequest) {
-  const user = await requireRole(["SUPER_ADMIN", "COMPANY_ADMIN", "HR_MANAGER", "SUPERVISOR"]);
+  const user = await requireUser();
+  if (!MANAGER_ROLES.includes(user.role)) {
+    return NextResponse.json({ error: "Not allowed." }, { status: 403 });
+  }
+
   const { searchParams } = new URL(request.url);
 
   const search = searchParams.get("search") ?? undefined;
@@ -56,7 +62,11 @@ export async function GET(request: NextRequest) {
 
 // POST /api/employees
 export async function POST(request: NextRequest) {
-  const user = await requireRole(["SUPER_ADMIN", "COMPANY_ADMIN", "HR_MANAGER"]);
+  const user = await requireUser();
+  if (!CREATOR_ROLES.includes(user.role)) {
+    return NextResponse.json({ error: "Not allowed." }, { status: 403 });
+  }
+
   const body = await request.json();
 
   const parsed = createEmployeeSchema.safeParse(body);
@@ -64,8 +74,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const count = await prisma.employee.count({ where: { companyId: user.companyId } });
-  const employeeCode = generateEmployeeCode("SC", count + 1);
+  // Timestamp-based code — avoids any dependency on a per-company counter
+  // or a unique-constraint scope, so it can't collide with codes from
+  // other companies (e.g. seeded demo data) or under concurrent requests.
+  const employeeCode = `SC-${Date.now().toString(36).toUpperCase()}`;
 
   const employee = await prisma.employee.create({
     data: {

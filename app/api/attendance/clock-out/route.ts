@@ -9,7 +9,7 @@ const clockOutSchema = z.object({
   longitude: z.number().optional(),
 });
 
-const STANDARD_WORKDAY_MINUTES = 8 * 60;
+const FALLBACK_WORKDAY_MINUTES = 8 * 60; // used only if the employee has no assigned shift
 
 export async function POST(request: NextRequest) {
   const user = await requireUser();
@@ -37,7 +37,34 @@ export async function POST(request: NextRequest) {
 
   const now = new Date();
   const workedMinutes = minutesBetween(attendance.clockInAt, now);
-  const overtimeMinutes = Math.max(0, workedMinutes - STANDARD_WORKDAY_MINUTES);
+
+  // Overtime = time worked past the employee's actual scheduled shift end,
+  // not a flat 8 hours — a 3pm shift worked until 5pm is 2 hours overtime,
+  // regardless of what time they clocked in.
+  const assignment = await prisma.employeeShift.findFirst({
+    where: {
+      employeeId: user.employee.id,
+      effectiveFrom: { lte: now },
+      OR: [{ effectiveTo: null }, { effectiveTo: { gte: now } }],
+    },
+    include: { shift: true },
+  });
+
+  let overtimeMinutes = 0;
+
+  if (assignment) {
+    const [h, m] = assignment.shift.endTime.split(":").map(Number);
+    const shiftEnd = new Date(attendance.clockInAt);
+    shiftEnd.setHours(h, m, 0, 0);
+    // handles overnight shifts (e.g. night shift ending after midnight)
+    if (shiftEnd.getTime() < attendance.clockInAt.getTime()) {
+      shiftEnd.setDate(shiftEnd.getDate() + 1);
+    }
+    overtimeMinutes = Math.max(0, Math.round((now.getTime() - shiftEnd.getTime()) / 60000));
+  } else {
+    // no shift assigned — fall back to the flat 8-hour rule
+    overtimeMinutes = Math.max(0, workedMinutes - FALLBACK_WORKDAY_MINUTES);
+  }
 
   const updated = await prisma.attendance.update({
     where: { id: attendance.id },

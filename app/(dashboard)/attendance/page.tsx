@@ -1,19 +1,24 @@
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ClockWidget } from "@/components/attendance/clock-widget";
+import { QrBadge } from "@/components/attendance/qr-badge";
+import { FingerprintRegistration } from "@/components/attendance/fingerprint-registration";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 export default async function AttendancePage() {
   const user = await requireUser();
 
-  const history = user.employee
-    ? await prisma.attendance.findMany({
-        where: { employeeId: user.employee.id },
-        orderBy: { clockInAt: "desc" },
-        take: 14,
-      })
-    : [];
+  const [history, credentialCount] = user.employee
+    ? await Promise.all([
+        prisma.attendance.findMany({
+          where: { employeeId: user.employee.id },
+          orderBy: { clockInAt: "desc" },
+          take: 14,
+        }),
+        prisma.webAuthnCredential.count({ where: { employeeId: user.employee.id } }),
+      ])
+    : [[], 0];
 
   return (
     <div className="space-y-6">
@@ -23,7 +28,20 @@ export default async function AttendancePage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <ClockWidget />
+        <div className="space-y-5">
+          <ClockWidget 
+            profilePhotoUrl={null}
+            fingerprintRegistered={credentialCount > 0}
+          />
+          {user.employee && (
+            <QrBadge
+              qrToken={user.employee.qrCodeToken}
+              employeeName={user.employee.fullName}
+              employeeCode={user.employee.employeeCode}
+            />
+          )}
+          <FingerprintRegistration alreadyRegistered={credentialCount > 0} />
+        </div>
 
         <Card className="lg:col-span-2">
           <CardHeader>

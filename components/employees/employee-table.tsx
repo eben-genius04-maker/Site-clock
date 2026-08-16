@@ -1,11 +1,11 @@
-"use client";
-
+ "use client";
+import { EmployeeBiometricsDialog } from "@/components/employees/employee-biometrics-dialog";
 import { useState, useEffect, useCallback } from "react";
-import { Search, Plus, MoreVertical } from "lucide-react";
+import { Search, MoreVertical } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { AddEmployeeDialog } from "@/components/employees/add-employee-dialog";
 
 type Employee = {
   id: string;
@@ -51,9 +51,7 @@ export function EmployeeTable() {
             className="pl-9"
           />
         </div>
-        <Button size="sm">
-          <Plus size={15} /> Add employee
-        </Button>
+        <AddEmployeeDialog onCreated={() => load(search)} />
       </div>
 
       <div className="overflow-x-auto">
@@ -95,9 +93,7 @@ export function EmployeeTable() {
                   <Badge tone={STATUS_TONE[emp.status]}>{emp.status.toLowerCase()}</Badge>
                 </td>
                 <td className="px-5 py-3">
-                  <button className="p-1 rounded hover:bg-slate-100" aria-label={`Actions for ${emp.fullName}`}>
-                    <MoreVertical size={15} className="text-slate-400" />
-                  </button>
+                  <EmployeeBiometricsDialog employeeId={emp.id} employeeName={emp.fullName} />
                 </td>
               </tr>
             ))}

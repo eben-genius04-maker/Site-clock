@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Users, Clock, CalendarDays, Building2,
-  FileBarChart, Settings, LogOut,
+  FileBarChart, Settings, LogOut, CalendarClock,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -16,6 +16,7 @@ const NAV = [
   { href: "/attendance", icon: Clock, label: "Attendance", roles: null },
   { href: "/leave", icon: CalendarDays, label: "Leave", roles: null },
   { href: "/departments", icon: Building2, label: "Departments", roles: ["SUPER_ADMIN", "COMPANY_ADMIN", "HR_MANAGER"] },
+  { href: "/shifts", icon: CalendarClock, label: "Shifts", roles: ["SUPER_ADMIN", "COMPANY_ADMIN", "HR_MANAGER"] },
   { href: "/reports", icon: FileBarChart, label: "Reports", roles: ["SUPER_ADMIN", "COMPANY_ADMIN", "HR_MANAGER"] },
   { href: "/settings", icon: Settings, label: "Settings", roles: ["SUPER_ADMIN", "COMPANY_ADMIN"] },
 ] as const;
@@ -49,6 +50,7 @@ export function Sidebar({ role }: { role: Role }) {
             <Link
               key={href}
               href={href}
+              prefetch={false}
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors"
               style={{
                 backgroundColor: active ? "rgba(212,175,55,0.12)" : "transparent",

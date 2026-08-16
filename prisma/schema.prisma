@@ -1,6 +1,6 @@
-// SiteClock — Prisma schema
+ // SiteClock — Prisma schema
 // Postgres via Supabase. Auth identity lives in Supabase's auth.users table;
-// `User` below mirrors it 1:1 (id = Supabase auth uid) so we can join freely
+// User below mirrors it 1:1 (id = Supabase auth uid) so we can join freely
 // in application queries without touching the protected auth schema.
 
 generator client {
@@ -27,8 +27,10 @@ enum AttendanceMethod {
   GPS
   QR_CODE
   FACE
+  FINGERPRINT
   MANUAL
 }
+
 
 enum AttendanceStatus {
   ON_TIME
@@ -135,7 +137,7 @@ model OfficeLocation {
 
 model Employee {
   id               String           @id @default(uuid())
-  employeeCode     String           @unique // e.g. SC-2026-0001
+  employeeCode     String           // e.g. SC-2026-0001
   userId           String?          @unique
   user             User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
   companyId        String
@@ -162,15 +164,16 @@ model Employee {
   leaveRequests LeaveRequest[]
   shiftAssignments EmployeeShift[]
   payrollEntries   PayrollEntry[]
+  webauthnCredentials WebAuthnCredential[]
 
+  @@unique([companyId, employeeCode])
   @@index([companyId])
   @@index([departmentId])
   @@map("employees")
 }
 
 // ---------- Shifts ----------
-
-model Shift {
+ model Shift {
   id        String    @id @default(uuid())
   name      String
   type      ShiftType
@@ -313,8 +316,7 @@ model AuditLog {
   entityId  String?
   metadata  Json?
   createdAt DateTime @default(now())
-
-  @@index([companyId, createdAt])
+ @@index([companyId, createdAt])
   @@map("audit_logs")
 }
 
@@ -330,4 +332,25 @@ model CompanySettings {
   holidayCalendar   Json?   // [{ date: "2026-03-06", name: "Independence Day" }]
 
   @@map("company_settings")
+}
+
+// ---------- WebAuthn (fingerprint / device biometric clock-in) ----------
+// Each row is one registered device credential. An employee can register
+// more than one device (e.g. work phone + laptop). Stores only the public
+// key and a signature counter — never any actual biometric data, which
+// never leaves the employee's device.
+
+model WebAuthnCredential {
+  id           String   @id @default(uuid())
+  employeeId   String
+  employee     Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  credentialId String   @unique // base64url, from the authenticator
+  publicKey    Bytes
+  counter      BigInt   @default(0)
+  deviceName   String? // e.g. "iPhone", "Windows laptop" — best-effort label
+  createdAt    DateTime @default(now())
+  lastUsedAt   DateTime?
+
+  @@index([employeeId])
+  @@map("webauthn_credentials")
 }

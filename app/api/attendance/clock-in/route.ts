@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
@@ -104,8 +104,7 @@ export async function POST(request: NextRequest) {
       needsReview,
     },
   });
-
-  if (needsReview) {
+ if (needsReview) {
     await prisma.notification.create({
       data: {
         companyId: user.companyId,

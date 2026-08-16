@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireRole, requireUser } from "@/lib/auth";
+import { requireUser } from "@/lib/auth";
+
+const EDITOR_ROLES = ["SUPER_ADMIN", "COMPANY_ADMIN", "HR_MANAGER"];
+const DELETER_ROLES = ["SUPER_ADMIN", "COMPANY_ADMIN"];
 
 const updateSchema = z.object({
   fullName: z.string().min(2).optional(),
@@ -12,7 +15,7 @@ const updateSchema = z.object({
   salary: z.number().positive().optional(),
   emergencyContact: z.string().optional(),
   address: z.string().optional(),
-  photoUrl: z.string().url().optional(),
+  photoUrl: z.string().optional(), // accepts data: URLs from selfie capture, not just real URLs
 });
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -21,7 +24,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const employee = await prisma.employee.findFirst({
     where: { id, companyId: user.companyId },
-    include: { department: true, attendances: { orderBy: { clockInAt: "desc" }, take: 10 } },
+    include: {
+      department: true,
+      attendances: { orderBy: { clockInAt: "desc" }, take: 10 },
+      webauthnCredentials: { select: { id: true } },
+    },
   });
 
   if (!employee) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -29,7 +36,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 }
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const user = await requireRole(["SUPER_ADMIN", "COMPANY_ADMIN", "HR_MANAGER"]);
+  const user = await requireUser();
+  if (!EDITOR_ROLES.includes(user.role)) {
+    return NextResponse.json({ error: "Not allowed." }, { status: 403 });
+  }
+
   const { id } = await params;
   const body = await request.json();
 
@@ -58,7 +69,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const user = await requireRole(["SUPER_ADMIN", "COMPANY_ADMIN"]);
+  const user = await requireUser();
+  if (!DELETER_ROLES.includes(user.role)) {
+    return NextResponse.json({ error: "Not allowed." }, { status: 403 });
+  }
+
   const { id } = await params;
 
   const existing = await prisma.employee.findFirst({ where: { id, companyId: user.companyId } });
