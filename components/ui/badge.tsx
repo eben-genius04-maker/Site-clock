@@ -8,6 +8,7 @@ const toneStyles: Record<string, string> = {
   gold: "bg-gold/10 text-gold",
 };
 
+
 export function Badge({
   tone = "neutral",
   children,
