@@ -1,13 +1,13 @@
-"use client";
+ "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Users, Clock, CalendarDays, Building2,
-  FileBarChart, Settings, LogOut, CalendarClock,
+  FileBarChart, Settings, LogOut, CalendarClock, Menu, X,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
 import type { Role } from "@prisma/client";
 
 const NAV = [
@@ -24,6 +24,7 @@ const NAV = [
 export function Sidebar({ role }: { role: Role }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [open, setOpen] = useState(false);
 
   async function handleSignOut() {
     const supabase = createClient();
@@ -32,17 +33,13 @@ export function Sidebar({ role }: { role: Role }) {
     router.refresh();
   }
 
-  const items = NAV.filter((item) => !item.roles || (item.roles as readonly string[]).includes(role));
+  const items = NAV.filter((item) => {
+    if (!item.roles) return true;
+    return (item.roles as readonly string[]).includes(role);
+  });
 
-  return (
-    <aside className="w-60 shrink-0 hidden md:flex flex-col py-6 px-4 bg-navy">
-      <Link href="/dashboard" className="flex items-center gap-2 px-2 mb-8">
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gold">
-          <Clock size={16} className="text-navy" strokeWidth={2.5} />
-        </div>
-        <span className="font-display font-semibold text-white text-[17px] tracking-tight">SiteClock</span>
-      </Link>
-
+  function NavLinks() {
+    return (
       <nav className="flex flex-col gap-1">
         {items.map(({ href, icon: Icon, label }) => {
           const active = pathname === href || pathname.startsWith(href + "/");
@@ -51,6 +48,7 @@ export function Sidebar({ role }: { role: Role }) {
               key={href}
               href={href}
               prefetch={false}
+              onClick={() => setOpen(false)}
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors"
               style={{
                 backgroundColor: active ? "rgba(212,175,55,0.12)" : "transparent",
@@ -63,16 +61,84 @@ export function Sidebar({ role }: { role: Role }) {
           );
         })}
       </nav>
+    );
+  }
 
-      <div className="mt-auto pt-6 border-t border-white/10">
+  return (
+    <>
+      {/* Mobile top bar with hamburger */}
+      <div className="md:hidden flex items-center justify-between px-4 py-3 bg-navy sticky top-0 z-40">
+        <Link href="/dashboard" className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gold">
+            <Clock size={16} className="text-navy" strokeWidth={2.5} />
+          </div>
+          <span className="font-display font-semibold text-white text-[17px] tracking-tight">SiteClock</span>
+        </Link>
         <button
-          onClick={handleSignOut}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-[#B8C4D9] w-full hover:text-white"
+          onClick={() => setOpen(true)}
+          className="text-white p-2"
+          aria-label="Open menu"
         >
-          <LogOut size={17} strokeWidth={2} />
-          Sign out
+          <Menu size={24} />
         </button>
       </div>
-    </aside>
+
+      {/* Mobile drawer + backdrop */}
+      {open && (
+        <div className="md:hidden fixed inset-0 z-50 flex">
+          <div
+            className="fixed inset-0 bg-black/50"
+            onClick={() => setOpen(false)}
+          />
+          <aside className="relative w-64 shrink-0 flex flex-col py-6 px-4 bg-navy">
+            <div className="flex items-center justify-between mb-8">
+              <Link href="/dashboard" onClick={() => setOpen(false)} className="flex items-center gap-2 px-2">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gold">
+ <Clock size={16} className="text-navy" strokeWidth={2.5} />
+                </div>
+                <span className="font-display font-semibold text-white text-[17px] tracking-tight">SiteClock</span>
+              </Link>
+              <button onClick={() => setOpen(false)} className="text-white p-1" aria-label="Close menu">
+                <X size={22} />
+              </button>
+            </div>
+
+            <NavLinks />
+
+            <div className="mt-auto pt-6 border-t border-white/10">
+              <button
+                onClick={handleSignOut}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-[#B8C4D9] w-full hover:text-white"
+              >
+                <LogOut size={17} strokeWidth={2} />
+                Sign out
+              </button>
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {/* Desktop sidebar (unchanged) */}
+      <aside className="w-60 shrink-0 hidden md:flex flex-col py-6 px-4 bg-navy">
+        <Link href="/dashboard" className="flex items-center gap-2 px-2 mb-8">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gold">
+            <Clock size={16} className="text-navy" strokeWidth={2.5} />
+          </div>
+          <span className="font-display font-semibold text-white text-[17px] tracking-tight">SiteClock</span>
+        </Link>
+
+        <NavLinks />
+
+        <div className="mt-auto pt-6 border-t border-white/10">
+          <button
+            onClick={handleSignOut}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-[#B8C4D9] w-full hover:text-white"
+          >
+            <LogOut size={17} strokeWidth={2} />
+            Sign out
+          </button>
+        </div>
+      </aside>
+    </>
   );
 }
