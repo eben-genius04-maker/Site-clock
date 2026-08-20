@@ -55,7 +55,7 @@ export function ClockWidget({ profilePhotoUrl, fingerprintRegistered }: {
             data.attendance.status === "FLAGGED"
               ? "Clocked in — flagged for review (outside office radius)."
               : data.attendance.status === "LATE"
-              ? `Clocked in — marked late (${data.attendance.lateMinutes} min).`
+              ? "Clocked in — marked late (" + data.attendance.lateMinutes + " min)."
               : "Clocked in on time."
           );
         } catch (err) {
@@ -76,21 +76,20 @@ export function ClockWidget({ profilePhotoUrl, fingerprintRegistered }: {
     setMessage(null);
 
     try {
-      const res = await fetch("/api/attendance/clock-in", {
+      const res = await fetch("/api/attendance/clock-in-public", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ method: "QR_CODE", qrToken }),
+        body: JSON.stringify({ qrToken }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Clock-in failed.");
 
       setState("done");
       setMessage(
-        data.attendance.status === "FLAGGED"
-          ? "Clocked in — flagged for review."
-          : data.attendance.status === "LATE"
-          ? `Clocked in — marked late (${data.attendance.lateMinutes} min).`
-          : "Clocked in on time."
+        (data.employeeName ? data.employeeName + " — " : "") +
+        (data.attendance.status === "LATE"
+          ? "clocked in, marked late (" + data.attendance.lateMinutes + " min)."
+          : "clocked in on time.")
       );
     } catch (err) {
       setState("error");
@@ -110,13 +109,12 @@ export function ClockWidget({ profilePhotoUrl, fingerprintRegistered }: {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Clock-in failed.");
-
-      setState("done");
+       setState("done");
       setMessage(
         data.attendance.status === "FLAGGED"
           ? "Clocked in — flagged for review (face match needs confirmation)."
           : data.attendance.status === "LATE"
-          ? `Clocked in — marked late (${data.attendance.lateMinutes} min).`
+          ? "Clocked in — marked late (" + data.attendance.lateMinutes + " min)."
           : "Clocked in on time."
       );
     } catch (err) {
@@ -147,8 +145,8 @@ export function ClockWidget({ profilePhotoUrl, fingerprintRegistered }: {
       setState("done");
       setMessage(
         data.attendance.status === "LATE"
-          ? `${data.employeeName} clocked in — marked late (${data.attendance.lateMinutes} min).`
-          : `${data.employeeName} clocked in on time.`
+          ? data.employeeName + " clocked in — marked late (" + data.attendance.lateMinutes + " min)."
+          : data.employeeName + " clocked in on time."
       );
     } catch (err) {
       setState("error");
