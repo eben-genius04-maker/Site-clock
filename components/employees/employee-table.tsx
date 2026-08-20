@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { AddEmployeeDialog } from "@/components/employees/add-employee-dialog";
+import Link from "next/link";
 
 type Employee = {
   id: string;
@@ -74,7 +75,7 @@ export function EmployeeTable() {
               <tr><td colSpan={6} className="px-5 py-8 text-center text-slate-400">No employees found.</td></tr>
             )}
             {employees.map((emp) => (
-              <tr key={emp.id} className="hover:bg-slate-50/50">
+              <tr key={emp.id} className="hover:bg-slate-50/50 cursor-pointer" onClick={() => window.location.assign("/employees/" + emp.id)}>
                 <td className="px-5 py-3">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-navy/10 text-navy flex items-center justify-center text-xs font-semibold shrink-0">
@@ -92,9 +93,9 @@ export function EmployeeTable() {
                 <td className="px-5 py-3">
                   <Badge tone={STATUS_TONE[emp.status]}>{emp.status.toLowerCase()}</Badge>
                 </td>
-                <td className="px-5 py-3">
-                  <EmployeeBiometricsDialog employeeId={emp.id} employeeName={emp.fullName} />
-                </td>
+                <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
+  <EmployeeBiometricsDialog employeeId={emp.id} employeeName={emp.fullName} />
+</td>
               </tr>
             ))}
           </tbody>
