@@ -17,8 +17,7 @@ export async function GET(request: NextRequest) {
       const existing = await prisma.user.findUnique({ where: { id: authUser.id } });
 
       if (!existing) {
-        const companyName = (authUser.user_metadata?.company_name as string) || "New Company";
-        const fullName = (authUser.user_metadata?.full_name as string) || "";
+       const companyName = (authUser.user_metadata?.company_name as string) || "New Company";
 
         const company = await prisma.company.create({
           data: {
@@ -31,7 +30,6 @@ export async function GET(request: NextRequest) {
           data: {
             id: authUser.id,
             email: authUser.email || "",
-            fullName,
             role: "COMPANY_ADMIN",
             companyId: company.id,
           },
