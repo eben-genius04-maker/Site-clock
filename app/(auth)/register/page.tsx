@@ -28,17 +28,28 @@ export default function RegisterPage() {
       password,
       options: {
         data: { full_name: fullName, company_name: companyName },
-        emailRedirectTo: `${location.origin}/auth/callback`,
       },
     });
 
-    setLoading(false);
     if (error) {
+      setLoading(false);
       setError(error.message);
       return;
     }
-    // The actual Company + User + COMPANY_ADMIN role rows are created by a
-    // Supabase Auth webhook -> /api/auth/webhook (see README "Provisioning").
+
+    const provisionRes = await fetch("/api/auth/provision", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ companyName }),
+    });
+
+    setLoading(false);
+
+    if (!provisionRes.ok) {
+      setError("Account created but workspace setup failed. Try signing in.");
+      return;
+    }
+
     setSent(true);
   }
 
