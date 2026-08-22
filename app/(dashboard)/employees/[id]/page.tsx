@@ -56,7 +56,7 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
               emergencyContact: employee.emergencyContact,
               address: employee.address,
             }}
-            onUpdated={() => window.location.reload()}
+          
           />
         </div>
       </div>

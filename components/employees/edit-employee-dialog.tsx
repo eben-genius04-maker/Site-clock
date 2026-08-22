@@ -11,7 +11,6 @@ type Department = { id: string; name: string };
 export function EditEmployeeDialog({
   employeeId,
   initial,
-  onUpdated,
 }: {
   employeeId: string;
   initial: {
@@ -24,8 +23,8 @@ export function EditEmployeeDialog({
     emergencyContact: string | null;
     address: string | null;
   };
-  onUpdated: () => void;
 }) {
+
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +69,7 @@ export function EditEmployeeDialog({
       if (!res.ok) throw new Error(data.error ?? "Update failed.");
 
       setOpen(false);
-      onUpdated();
+      window.location.reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
@@ -139,7 +138,7 @@ export function EditEmployeeDialog({
           <div>
             <label className="text-xs font-medium text-slate-500 mb-1 block">Address</label>
             <Input value={address} onChange={(e) => setAddress(e.target.value)} />
-          </div>
+          </div># removed duplicate marker
         </div>
 
         {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
