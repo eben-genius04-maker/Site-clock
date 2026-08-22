@@ -1,12 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user: authUser } } = await supabase.auth.getUser();
+  const body = await request.json();
+  const { companyName, accessToken } = body;
 
-  if (!authUser) {
+  if (!accessToken) {
+    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
+  }
+
+  const supabase = createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  const { data: { user: authUser }, error: userError } = await supabase.auth.getUser(accessToken);
+
+  if (userError || !authUser) {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
   }
 
@@ -15,12 +26,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true });
   }
 
-  const body = await request.json();
-  const companyName = body.companyName || "New Company";
-
   const company = await prisma.company.create({
     data: {
-      name: companyName,
+      name: companyName || "New Company",
       settings: { create: {} },
     },
   });

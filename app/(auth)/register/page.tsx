@@ -22,8 +22,8 @@ export default function RegisterPage() {
     setLoading(true);
     setError(null);
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.signUp({
+   const supabase = createClient();
+    const { data: signUpData, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -37,12 +37,13 @@ export default function RegisterPage() {
       return;
     }
 
+    const accessToken = signUpData.session?.access_token;
+
     const provisionRes = await fetch("/api/auth/provision", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ companyName }),
-    });
-
+      body: JSON.stringify({ companyName, accessToken }),
+    }); 
     setLoading(false);
 
     if (!provisionRes.ok) {
