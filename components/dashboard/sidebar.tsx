@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Users, Clock, CalendarDays, Building2,
-  FileBarChart, Settings, LogOut, CalendarClock, Menu, X,
+  FileBarChart, Settings, LogOut, CalendarClock, Menu, X, Wallet,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Role } from "@prisma/client";
@@ -18,6 +18,7 @@ const NAV = [
   { href: "/departments", icon: Building2, label: "Departments", roles: ["SUPER_ADMIN", "COMPANY_ADMIN", "HR_MANAGER"] },
   { href: "/shifts", icon: CalendarClock, label: "Shifts", roles: ["SUPER_ADMIN", "COMPANY_ADMIN", "HR_MANAGER"] },
   { href: "/reports", icon: FileBarChart, label: "Reports", roles: ["SUPER_ADMIN", "COMPANY_ADMIN", "HR_MANAGER"] },
+  { href: "/payroll", icon: Wallet, label: "Payroll", roles: ["SUPER_ADMIN", "COMPANY_ADMIN", "HR_MANAGER"] },
   { href: "/settings", icon: Settings, label: "Settings", roles: ["SUPER_ADMIN", "COMPANY_ADMIN"] },
 ] as const;
 
