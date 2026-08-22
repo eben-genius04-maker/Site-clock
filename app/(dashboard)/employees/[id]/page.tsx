@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { QrBadge } from "@/components/attendance/qr-badge";
 import { EmployeeBiometricsDialog } from "@/components/employees/employee-biometrics-dialog";
+import { EditEmployeeDialog } from "@/components/employees/edit-employee-dialog";
 
 const STATUS_TONE = { ACTIVE: "success", SUSPENDED: "warning", TERMINATED: "danger" } as const;
 
@@ -41,9 +42,24 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
             <p className="text-sm text-slate-500">{employee.position ?? "No position set"}</p>
           </div>
         </div>
-        <Badge tone={STATUS_TONE[employee.status]}>{employee.status.toLowerCase()}</Badge>
+        <div className="flex items-center gap-3">
+          <Badge tone={STATUS_TONE[employee.status]}>{employee.status.toLowerCase()}</Badge>
+          <EditEmployeeDialog
+            employeeId={employee.id}
+            initial={{
+              fullName: employee.fullName,
+              phone: employee.phone,
+              position: employee.position,
+              salary: employee.salary ? employee.salary.toString() : null,
+              departmentId: employee.departmentId,
+              status: employee.status,
+              emergencyContact: employee.emergencyContact,
+              address: employee.address,
+            }}
+            onUpdated={() => window.location.reload()}
+          />
+        </div>
       </div>
-
       <div className="grid gap-6 md:grid-cols-3">
         <div className="md:col-span-2 space-y-6">
           <Card className="p-5">
@@ -73,6 +89,12 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
                 <dt className="text-xs text-slate-400 mb-1 flex items-center gap-1"><Fingerprint size={12} /> Fingerprint</dt>
                 <dd className="text-slate-700">
                   {employee.webauthnCredentials.length > 0 ? "Registered" : "Not registered"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-slate-400 mb-1">Monthly salary</dt>
+                <dd className="text-slate-700">
+                  {employee.salary ? Number(employee.salary).toLocaleString() : "Not set"}
                 </dd>
               </div>
             </dl>
