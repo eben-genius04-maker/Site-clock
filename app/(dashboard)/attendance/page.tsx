@@ -9,7 +9,10 @@ import { Badge } from "@/components/ui/badge";
 export default async function AttendancePage() {
   const user = await requireUser();
 
-  const [history, credentialCount] = user.employee
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+
+  const [history, credentialCount, activeAttendance] = user.employee
     ? await Promise.all([
         prisma.attendance.findMany({
           where: { employeeId: user.employee.id },
@@ -17,8 +20,11 @@ export default async function AttendancePage() {
           take: 14,
         }),
         prisma.webAuthnCredential.count({ where: { employeeId: user.employee.id } }),
+        prisma.attendance.findFirst({
+          where: { employeeId: user.employee.id, clockInAt: { gte: startOfToday }, clockOutAt: null },
+        }),
       ])
-    : [[], 0];
+    : [[], 0, null];
 
   return (
     <div className="space-y-6">
@@ -32,6 +38,7 @@ export default async function AttendancePage() {
           <ClockWidget 
             profilePhotoUrl={null}
             fingerprintRegistered={credentialCount > 0}
+            hasActiveClockIn={!!activeAttendance}
           />
           {user.employee && (
             <QrBadge

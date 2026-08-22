@@ -10,14 +10,15 @@ import { SelfieCapture } from "@/components/attendance/selfie-capture";
 
 type ClockState = "idle" | "locating" | "submitting" | "done" | "error";
 
-export function ClockWidget({ profilePhotoUrl, fingerprintRegistered }: {
+export function ClockWidget({ profilePhotoUrl, fingerprintRegistered, hasActiveClockIn }: {
   profilePhotoUrl: string | null;
   fingerprintRegistered: boolean;
+  hasActiveClockIn: boolean;
 }) {
   const [state, setState] = useState<ClockState>("idle");
   const [message, setMessage] = useState<string | null>(null);
   const [now, setNow] = useState<Date | null>(null);
-
+  const [clockedIn, setClockedIn] = useState(hasActiveClockIn);
   useEffect(() => {
     setNow(new Date());
     const t = setInterval(() => setNow(new Date()), 1000);
@@ -85,11 +86,12 @@ export function ClockWidget({ profilePhotoUrl, fingerprintRegistered }: {
       if (!res.ok) throw new Error(data.error ?? "Clock-in failed.");
 
       setState("done");
+      setClockedIn(true);
       setMessage(
         (data.employeeName ? data.employeeName + " — " : "") +
-        (data.attendance.status === "LATE"
-          ? "clocked in, marked late (" + data.attendance.lateMinutes + " min)."
-          : "clocked in on time.")
+          (data.attendance.status === "LATE"
+            ? "clocked in, marked late (" + data.attendance.lateMinutes + " min)."
+            : "clocked in on time.")
       );
     } catch (err) {
       setState("error");
@@ -98,9 +100,6 @@ export function ClockWidget({ profilePhotoUrl, fingerprintRegistered }: {
   }, []);
 
   const handleSelfieVerified = useCallback(async (confidence: number) => {
-    setState("submitting");
-    setMessage(null);
-
     try {
       const res = await fetch("/api/attendance/clock-in", {
         method: "POST",
@@ -109,7 +108,8 @@ export function ClockWidget({ profilePhotoUrl, fingerprintRegistered }: {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Clock-in failed.");
-       setState("done");
+      setState("done");
+      setClockedIn(true);
       setMessage(
         data.attendance.status === "FLAGGED"
           ? "Clocked in — flagged for review (face match needs confirmation)."
@@ -124,9 +124,6 @@ export function ClockWidget({ profilePhotoUrl, fingerprintRegistered }: {
   }, []);
 
   async function handleFingerprintClockIn() {
-    setState("submitting");
-    setMessage(null);
-
     try {
       const optionsRes = await fetch("/api/webauthn/clockin-options", { method: "POST" });
       const options = await optionsRes.json();
@@ -143,6 +140,7 @@ export function ClockWidget({ profilePhotoUrl, fingerprintRegistered }: {
       if (!res.ok) throw new Error(data.error ?? "Fingerprint didn't match.");
 
       setState("done");
+      setClockedIn(true);
       setMessage(
         data.attendance.status === "LATE"
           ? data.employeeName + " clocked in — marked late (" + data.attendance.lateMinutes + " min)."
@@ -160,6 +158,50 @@ export function ClockWidget({ profilePhotoUrl, fingerprintRegistered }: {
     }
   }
 
+  function handleClockOut() {
+    setState("locating");
+    setMessage(null);
+
+    if (!navigator.geolocation) {
+      submitClockOut(undefined, undefined);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        submitClockOut(position.coords.latitude, position.coords.longitude);
+      },
+      () => {
+        submitClockOut(undefined, undefined);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
+  async function submitClockOut(latitude: number | undefined, longitude: number | undefined) {
+    setState("submitting");
+    try {
+      const res = await fetch("/api/attendance/clock-out", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ latitude, longitude }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Clock-out failed.");
+
+      setState("done");
+      setClockedIn(false);
+      const hours = Math.floor(data.attendance.workedMinutes / 60);
+      const mins = data.attendance.workedMinutes % 60;
+      setMessage(
+        "Clocked out — worked " + hours + "h " + mins + "m" +
+        (data.attendance.overtimeMinutes > 0 ? " (" + data.attendance.overtimeMinutes + " min overtime)." : ".")
+      );
+    } catch (err) {
+      setState("error");
+      setMessage(err instanceof Error ? err.message : "Something went wrong.");
+    }
+  }
   return (
     <Card className="max-w-md">
       <CardContent className="text-center py-8">
@@ -171,28 +213,45 @@ export function ClockWidget({ profilePhotoUrl, fingerprintRegistered }: {
         </p>
 
         <div className="mt-8 flex flex-col gap-3">
-          <Button
-            size="lg"
-            onClick={handleGpsClockIn}
-            disabled={state === "locating" || state === "submitting"}
-          >
-            {state === "locating" || state === "submitting" ? (
-              <Loader2 size={16} className="animate-spin" />
-            ) : (
-              <MapPin size={16} />
-            )}
-            Clock in with GPS
-          </Button>
-          <QrScanner onScan={handleQrScan} />
-          <SelfieCapture profilePhotoUrl={profilePhotoUrl} onVerified={handleSelfieVerified} />
-          <Button
-            size="lg"
-            variant="outline"
-            onClick={handleFingerprintClockIn}
-            disabled={state === "submitting"}
-          >
-            <Fingerprint size={16} /> Clock in with fingerprint
-          </Button>
+          {clockedIn ? (
+            <Button
+              size="lg"
+              onClick={handleClockOut}
+              disabled={state === "locating" || state === "submitting"}
+            >
+              {state === "locating" || state === "submitting" ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <MapPin size={16} />
+              )}
+              Clock out
+            </Button>
+          ) : (
+            <>
+              <Button
+                size="lg"
+                onClick={handleGpsClockIn}
+                disabled={state === "locating" || state === "submitting"}
+              >
+                {state === "locating" || state === "submitting" ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <MapPin size={16} />
+                )}
+                Clock in with GPS
+              </Button>
+              <QrScanner onScan={handleQrScan} />
+              <SelfieCapture profilePhotoUrl={profilePhotoUrl} onVerified={handleSelfieVerified} />
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={handleFingerprintClockIn}
+                disabled={state === "submitting"}
+              >
+                <Fingerprint size={16} /> Clock in with fingerprint
+              </Button>
+            </>
+          )}
         </div>
 
         {message && (
