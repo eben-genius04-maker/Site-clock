@@ -87,12 +87,10 @@ export function ClockWidget({ profilePhotoUrl, fingerprintRegistered, hasActiveC
 
       setState("done");
       setClockedIn(true);
-      setMessage(
-        (data.employeeName ? data.employeeName + " — " : "") +
-          (data.attendance.status === "LATE"
-            ? "clocked in, marked late (" + data.attendance.lateMinutes + " min)."
-            : "clocked in on time.")
-      );
+      const name = data.employeeName ? data.employeeName + " — " : "";
+      const isLate = data.attendance && data.attendance.status === "LATE";
+      const lateMin = data.attendance ? data.attendance.lateMinutes : 0;
+      setMessage(name + (isLate ? "clocked in, marked late (" + lateMin + " min)." : "clocked in on time."));
     } catch (err) {
       setState("error");
       setMessage(err instanceof Error ? err.message : "Invalid or expired badge.");
