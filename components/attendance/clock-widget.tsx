@@ -86,7 +86,6 @@ export function ClockWidget({ profilePhotoUrl, fingerprintRegistered, hasActiveC
       if (!res.ok) throw new Error(data.error ?? "Clock-in failed.");
 
       setState("done");
-      setClockedIn(true);
       const name = data.employeeName ? data.employeeName + " — " : "";
       const isLate = data.attendance && data.attendance.status === "LATE";
       const lateMin = data.attendance ? data.attendance.lateMinutes : 0;
@@ -238,7 +237,6 @@ export function ClockWidget({ profilePhotoUrl, fingerprintRegistered, hasActiveC
                 )}
                 Clock in with GPS
               </Button>
-              <QrScanner onScan={handleQrScan} />
               <SelfieCapture profilePhotoUrl={profilePhotoUrl} onVerified={handleSelfieVerified} />
               <Button
                 size="lg"
@@ -250,6 +248,7 @@ export function ClockWidget({ profilePhotoUrl, fingerprintRegistered, hasActiveC
               </Button>
             </>
           )}
+          <QrScanner onScan={handleQrScan} />
         </div>
 
         {message && (
