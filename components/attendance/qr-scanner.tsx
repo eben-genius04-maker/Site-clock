@@ -10,42 +10,56 @@ export function QrScanner({ onScan }: { onScan: (token: string) => void }) {
   const [error, setError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const scannerRef = useRef<any>(null);
+  const stoppingRef = useRef(false);
 
   useEffect(() => {
-  if (!open) return;
-  let cancelled = false;
-  let started = false;
+    if (!open) return;
+    let cancelled = false;
+    let started = false;
+    stoppingRef.current = false;
 
-  import("html5-qrcode").then(({ Html5Qrcode }) => {
-    if (cancelled || !containerRef.current) return;
+    import("html5-qrcode").then(({ Html5Qrcode }) => {
+      if (cancelled || !containerRef.current) return;
 
-    const scanner = new Html5Qrcode("qr-scanner-region");
-    scannerRef.current = scanner;
+      const scanner = new Html5Qrcode("qr-scanner-region");
+      scannerRef.current = scanner;
 
-    scanner
-      .start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 220, height: 220 } },
-        (decodedText: string) => {
-          onScan(decodedText);
-          if (started) scanner.stop().catch(() => {});
-          setOpen(false);
-        },
-        () => {}
-      )
-      .then(() => {
-        started = true;
-      })
-      .catch(() => setError("Couldn't access the camera. Check permissions and try again."));
-  });
+      scanner
+        .start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 220, height: 220 } },
+          (decodedText: string) => {
+            if (stoppingRef.current) return;
+            stoppingRef.current = true;
 
-  return () => {
-    cancelled = true;
-    if (started) {
-      scannerRef.current?.stop().catch(() => {});
-    }
-  };
-}, [open, onScan]);
+            const finish = () => {
+              onScan(decodedText);
+              setOpen(false);
+            };
+
+            if (started) {
+              scanner.stop().then(finish).catch(finish);
+            } else {
+              finish();
+            }
+          },
+          () => {}
+        )
+        .then(() => {
+          started = true;
+        })
+        .catch(() => setError("Couldn't access the camera. Check permissions and try again."));
+    });
+
+    return () => {
+      cancelled = true;
+      if (started && !stoppingRef.current) {
+        stoppingRef.current = true;
+        scannerRef.current?.stop().catch(() => {});
+      }
+    };
+  }, [open, onScan]);
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
