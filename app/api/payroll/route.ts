@@ -88,6 +88,13 @@ export async function POST(request: NextRequest) {
     const salary = Number(employee.salary);
     const hourlyRate = salary / MONTHLY_HOURS;
 
+    let totalWorkedMinutes = 0;
+    let totalOvertimeMinutes = 0;
+    let totalLateMinutes = 0;
+
+    const expectedWorkingDays = countWorkingDays(periodStart, effectiveEnd, weekendDays);
+    const dailyRate = expectedWorkingDays > 0 ? salary / expectedWorkingDays : 0;
+
     const attendances = await prisma.attendance.findMany({
       where: {
         employeeId: employee.id,
@@ -95,40 +102,32 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    let totalWorkedMinutes = 0;
-    let totalOvertimeMinutes = 0;
-    let totalLateMinutes = 0;
-
     for (const a of attendances) {
       totalWorkedMinutes += a.workedMinutes ?? 0;
       totalOvertimeMinutes += a.overtimeMinutes;
       totalLateMinutes += a.lateMinutes;
     }
 
-    const regularMinutes = Math.max(0, totalWorkedMinutes - totalOvertimeMinutes);
-    const overtimePay = (totalOvertimeMinutes / 60) * hourlyRate * OVERTIME_MULTIPLIER;
-    const lateDeduction = (totalLateMinutes / 60) * hourlyRate;
-
-    const expectedWorkingDays = countWorkingDays(periodStart, effectiveEnd, weekendDays);
     const daysPresent = new Set(
       attendances.map((a) => a.clockInAt?.toDateString())
     ).size;
-    const absentDays = Math.max(0, expectedWorkingDays - daysPresent);
-    const absenceDeduction = expectedWorkingDays > 0
-      ? (salary / expectedWorkingDays) * absentDays
-      : 0;
 
-    const grossPay = salary + overtimePay - lateDeduction - absenceDeduction;
-    const netPay = Math.max(0, grossPay);
- const entry = await prisma.payrollEntry.create({
+    const basePay = dailyRate * daysPresent;
+    const overtimePay = (totalOvertimeMinutes / 60) * hourlyRate * OVERTIME_MULTIPLIER;
+    const lateDeduction = (totalLateMinutes / 60) * hourlyRate;
+
+    const grossPay = basePay + overtimePay;
+    const netPay = Math.max(0, grossPay - lateDeduction);
+
+    const entry = await prisma.payrollEntry.create({
       data: {
         employeeId: employee.id,
         periodStart,
         periodEnd,
-        regularMinutes,
+        regularMinutes: totalWorkedMinutes,
         overtimeMinutes: totalOvertimeMinutes,
         lateDeduction,
-        absenceDeduction,
+        absenceDeduction: dailyRate * Math.max(0, expectedWorkingDays - daysPresent),
         grossPay,
         netPay,
       },
