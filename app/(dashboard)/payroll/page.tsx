@@ -48,21 +48,26 @@ export default function PayrollPage() {
     setLoaded(true);
   }, [periodStart, periodEnd]);
 
+  const [genError, setGenError] = useState<string | null>(null);
+
   async function handleGenerate() {
     setGenerating(true);
+    setGenError(null);
     try {
       const res = await fetch("/api/payroll", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ periodStart, periodEnd }),
       });
-      if (!res.ok) throw new Error("Generation failed.");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ? JSON.stringify(data.error) : "Generation failed.");
       await loadEntries();
+    } catch (err) {
+      setGenError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
       setGenerating(false);
     }
   }
-
   function handleExportCsv() {
     const header = "Employee,ID,Regular Hours,Overtime Hours,Late Deduction,Absence Deduction,Gross Pay,Net Pay\n";
     const rows = entries.map((e) => {
@@ -123,6 +128,7 @@ export default function PayrollPage() {
             </Button>
           )}
         </div>
+        {genError && <p className="text-sm text-red-600 mt-2">{genError}</p>}
         <p className="text-xs text-slate-400 mt-3">
           Generating replaces any existing entries for this exact period. Pay is calculated from real
           clock-in/out records — regular hours, 1.5x overtime, late-minute deductions, and absence
