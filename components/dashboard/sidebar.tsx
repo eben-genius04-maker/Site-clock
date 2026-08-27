@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Users, Clock, CalendarDays, Building2,
-  FileBarChart, Settings, LogOut, CalendarClock, Menu, X, Wallet,
+  FileBarChart, Settings, LogOut, CalendarClock, Menu, X, Wallet, LogOut as ClockOutIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Role } from "@prisma/client";
@@ -14,6 +14,7 @@ const NAV = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard", roles: null },
   { href: "/employees", icon: Users, label: "Employees", roles: ["SUPER_ADMIN", "COMPANY_ADMIN", "HR_MANAGER", "SUPERVISOR"] },
   { href: "/attendance", icon: Clock, label: "Attendance", roles: null },
+  { href: "/clock-out", icon: ClockOutIcon, label: "Clock out (manager)", roles: ["SUPER_ADMIN", "COMPANY_ADMIN", "HR_MANAGER", "SUPERVISOR"] },
   { href: "/leave", icon: CalendarDays, label: "Leave", roles: null },
   { href: "/departments", icon: Building2, label: "Departments", roles: ["SUPER_ADMIN", "COMPANY_ADMIN", "HR_MANAGER"] },
   { href: "/shifts", icon: CalendarClock, label: "Shifts", roles: ["SUPER_ADMIN", "COMPANY_ADMIN", "HR_MANAGER"] },
