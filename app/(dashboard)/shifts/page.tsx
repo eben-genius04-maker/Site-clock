@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
 
 type Shift = {
   id: string;
@@ -171,7 +172,7 @@ export default function ShiftsPage() {
           )}
           {shifts.map(function (s) {
             return (
-              <div key={s.id} className="flex items-center justify-between px-5 py-3">
+              <Link key={s.id} href={"/shifts/" + s.id} className="flex items-center justify-between px-5 py-3 hover:bg-slate-50/50 cursor-pointer">
                 <div className="flex items-center gap-3">
                   <div className="rounded-lg bg-navy/5 p-2">
                     <Clock size={15} className="text-navy" />
@@ -185,7 +186,7 @@ export default function ShiftsPage() {
                   <Badge tone="neutral">{s.type.toLowerCase()}</Badge>
                   <span className="text-xs text-slate-400">{s._count.assignments} assigned</span>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>
