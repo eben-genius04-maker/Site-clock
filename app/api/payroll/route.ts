@@ -33,10 +33,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "periodStart and periodEnd are required." }, { status: 400 });
   }
 
+  const normalizedStart = new Date(periodStart);
+  normalizedStart.setHours(0, 0, 0, 0);
+  const normalizedEnd = new Date(periodEnd);
+  normalizedEnd.setHours(23, 59, 59, 999);
+
   const entries = await prisma.payrollEntry.findMany({
     where: {
-      periodStart: new Date(periodStart),
-      periodEnd: new Date(periodEnd),
+      periodStart: normalizedStart,
+      periodEnd: normalizedEnd,
       employee: { companyId: user.companyId },
     },
     include: { employee: { select: { fullName: true, employeeCode: true } } },
