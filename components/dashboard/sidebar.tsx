@@ -23,7 +23,7 @@ const NAV = [
   { href: "/settings", icon: Settings, label: "Settings", roles: ["SUPER_ADMIN", "COMPANY_ADMIN"] },
 ] as const;
 
-export function Sidebar({ role }: { role: Role }) {
+export function Sidebar({ role, logoUrl, companyName }: { role: Role; logoUrl?: string | null; companyName?: string }) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -71,9 +71,13 @@ export function Sidebar({ role }: { role: Role }) {
       {/* Mobile top bar with hamburger */}
       <div className="md:hidden flex items-center justify-between px-4 py-3 bg-navy sticky top-0 z-40">
         <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gold">
-            <Clock size={16} className="text-navy" strokeWidth={2.5} />
-          </div>
+          {logoUrl ? (
+            <img src={logoUrl} alt={companyName || "Logo"} className="w-8 h-8 rounded-lg object-cover" />
+          ) : (
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gold">
+              <Clock size={16} className="text-navy" strokeWidth={2.5} />
+            </div>
+          )}
           <span className="font-display font-semibold text-white text-[17px] tracking-tight">SiteClock</span>
         </Link>
         <button
@@ -95,9 +99,13 @@ export function Sidebar({ role }: { role: Role }) {
           <aside className="relative w-64 shrink-0 flex flex-col py-6 px-4 bg-navy">
             <div className="flex items-center justify-between mb-8">
               <Link href="/dashboard" onClick={() => setOpen(false)} className="flex items-center gap-2 px-2">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gold">
- <Clock size={16} className="text-navy" strokeWidth={2.5} />
-                </div>
+                {logoUrl ? (
+                  <img src={logoUrl} alt={companyName || "Logo"} className="w-8 h-8 rounded-lg object-cover" />
+                ) : (
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gold">
+                    <Clock size={16} className="text-navy" strokeWidth={2.5} />
+                  </div>
+                )}
                 <span className="font-display font-semibold text-white text-[17px] tracking-tight">SiteClock</span>
               </Link>
               <button onClick={() => setOpen(false)} className="text-white p-1" aria-label="Close menu">
@@ -123,9 +131,13 @@ export function Sidebar({ role }: { role: Role }) {
       {/* Desktop sidebar (unchanged) */}
       <aside className="w-60 shrink-0 hidden md:flex flex-col py-6 px-4 bg-navy">
         <Link href="/dashboard" className="flex items-center gap-2 px-2 mb-8">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gold">
-            <Clock size={16} className="text-navy" strokeWidth={2.5} />
-          </div>
+          {logoUrl ? (
+            <img src={logoUrl} alt={companyName || "Logo"} className="w-8 h-8 rounded-lg object-cover" />
+          ) : (
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gold">
+              <Clock size={16} className="text-navy" strokeWidth={2.5} />
+            </div>
+          )}
           <span className="font-display font-semibold text-white text-[17px] tracking-tight">SiteClock</span>
         </Link>
 
