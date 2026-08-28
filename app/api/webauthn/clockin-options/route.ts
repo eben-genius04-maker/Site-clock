@@ -1,30 +1,25 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { generateAuthenticationOptions } from "@simplewebauthn/server";
-import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { getRpID } from "@/lib/webauthn";
 
-// Starts a fingerprint clock-in attempt: returns a challenge scoped to this
-// employee's already-registered devices only.
+// Starts a fingerprint clock-in attempt. Usernameless / discoverable —
+// no allowCredentials list, so any employee's registered device can
+// respond. The device itself surfaces the right credential to the
+// person via their OS's fingerprint/Face ID picker, and clockin-verify
+// figures out who it belongs to from the credential ID returned.
+//
+// requireUser() here just confirms someone is logged into the kiosk/page
+// this is running on (e.g. a supervisor's session on a shared attendance
+// device) — it is NOT the identity being clocked in.
 export async function POST() {
-  const user = await requireUser();
-  if (!user.employee) {
-    return NextResponse.json({ error: "No employee profile linked to this account." }, { status: 400 });
-  }
-
-  const credentials = await prisma.webAuthnCredential.findMany({
-    where: { employeeId: user.employee.id },
-  });
-
-  if (credentials.length === 0) {
-    return NextResponse.json({ error: "No fingerprint registered on this account yet." }, { status: 400 });
-  }
+  await requireUser();
 
   const options = await generateAuthenticationOptions({
     rpID: getRpID(),
     userVerification: "required",
-    allowCredentials: credentials.map((c) => ({ id: c.credentialId })),
+    // no allowCredentials — discoverable credentials only
   });
 
   const cookieStore = await cookies();
