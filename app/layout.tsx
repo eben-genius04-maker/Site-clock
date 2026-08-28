@@ -19,8 +19,14 @@ const mono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "SiteClock — Workforce Attendance",
   description: "AI-powered employee attendance and workforce management.",
+  manifest: "/manifest.json",
+  themeColor: "#0B1E3D",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "SiteClock",
+  },
 };
-
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const fontClasses = display.variable + " " + body.variable + " " + mono.variable + " font-sans antialiased";
   return (
