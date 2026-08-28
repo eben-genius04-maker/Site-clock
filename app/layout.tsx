@@ -20,12 +20,19 @@ export const metadata: Metadata = {
   title: "SiteClock — Workforce Attendance",
   description: "AI-powered employee attendance and workforce management.",
   manifest: "/manifest.json",
-  themeColor: "#0B1E3D",
+  icons: {
+    icon: "/favicon-96x96.png",
+    apple: "/apple-touch-icon.png",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "SiteClock",
   },
+};
+
+export const viewport = {
+  themeColor: "#0B1E3D",
 };
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const fontClasses = display.variable + " " + body.variable + " " + mono.variable + " font-sans antialiased";
